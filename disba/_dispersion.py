@@ -3,7 +3,7 @@ from collections import namedtuple
 from ._base import BaseDispersion
 from ._common import ifunc
 from ._cps import surf96
-from ._helpers import is_sorted
+from ._helpers import is_sorted, flatten
 
 __all__ = [
     "DispersionCurve",
@@ -19,7 +19,7 @@ DispersionCurve = namedtuple(
 
 class PhaseDispersion(BaseDispersion):
     def __init__(
-        self, thickness, velocity_p, velocity_s, density, algorithm="dunkin", dc=0.005,
+        self, thickness, velocity_p, velocity_s, density, algorithm="dunkin", dc=0.005, model_type="flat",
     ):
         """
         Phase velocity dispersion class.
@@ -40,9 +40,12 @@ class PhaseDispersion(BaseDispersion):
              - 'fast-delta': fast delta matrix (after Buchen and Ben-Hador, 1996).
         dc : scalar, optional, default 0.005
             Phase velocity increment for root finding.
+        model_type : string, optional, default flat
+            Indicate the type of model layers - flat or spherical
 
         """
         super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
+        self._model_type = model_type
 
     def __call__(self, t, mode=0, wave="rayleigh"):
         """
@@ -66,12 +69,16 @@ class PhaseDispersion(BaseDispersion):
         if not is_sorted(t):
             raise ValueError("period axis must be sorted")
 
+        thick,vp,vs,density = self._thickness, self._velocity_p, self._velocity_s, self._density
+        if self._model_type == 'spherical':
+            thick,vp,vs,density = flatten(self._thickness, self._velocity_p, self._velocity_s, self._density, wave)
+
         c = surf96(
             t,
-            self._thickness,
-            self._velocity_p,
-            self._velocity_s,
-            self._density,
+            thick,
+            vp,
+            vs,
+            density,
             mode,
             0,
             ifunc[self._algorithm][wave],
@@ -95,6 +102,7 @@ class GroupDispersion(BaseDispersion):
         algorithm="dunkin",
         dc=0.005,
         dt=0.025,
+        model_type="flat"
     ):
         """
         Group velocity dispersion class.
@@ -117,13 +125,15 @@ class GroupDispersion(BaseDispersion):
             Phase velocity increment for root finding.
         dt : scalar, optional, default 0.025
             Frequency increment (%) for calculating group velocity.
+        model_type : string, optional, default flat
+            Indicate the type of model layers - flat or spherical
 
         """
         if not isinstance(dt, float):
             raise TypeError()
 
         super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
-
+        self._model_type = model_type
         self._dt = dt
 
     def __call__(self, t, mode=0, wave="rayleigh"):
@@ -148,12 +158,16 @@ class GroupDispersion(BaseDispersion):
         if not is_sorted(t):
             raise ValueError("period axis must be sorted")
 
+        thick,vp,vs,density = self._thickness, self._velocity_p, self._velocity_s, self._density
+        if self._model_type == 'spherical':
+            thick,vp,vs,density = flatten(self._thickness, self._velocity_p, self._velocity_s, self._density, wave)
+
         c = surf96(
             t,
-            self._thickness,
-            self._velocity_p,
-            self._velocity_s,
-            self._density,
+            thick,
+            vp,
+            vs,
+            density,
             mode,
             1,
             ifunc[self._algorithm][wave],

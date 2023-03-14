@@ -8,6 +8,46 @@ __all__ = [
 ]
 
 
+def flatten(thickness, velocity_p, velocity_s, density, wave):
+    if wave not in ['love', 'rayleigh']:
+        raise Exception("Bad wave {} on flat, valid are 'love' or 'rayleigh'.".format(wave))
+    
+    earth = 6371.0
+    dr    = 0.0
+    r0    = earth
+    
+    thick = []
+    nvp   = []
+    nvs   = []
+    ndensity  = []
+    for (i,(d, vp,vs,density)) in enumerate(zip(thickness, velocity_p, velocity_s, density)):
+        dr += d
+        r1 = earth - dr
+        
+        # Thick
+        if r1 < 1E-5: r1 = 1E-5
+        z0 = earth * np.log(earth/r0)
+        z1 = earth * np.log(earth/r1)
+        thick.append(z1-z0)
+        tmp = ((earth+earth) / (r0 + r1))
+        
+        # Velocity
+        nvp.append(tmp*vp)
+        nvs.append(tmp*vs)
+        
+        # Density
+        if wave == 'love':
+            ndensity.append(density * np.power(tmp, -5.0))
+        elif wave == 'rayleigh':
+            ndensity.append(density * np.power(tmp, -2.275))
+
+        r0 = r1
+        
+    # Last layer is semi-space
+    thick[-1] = 0.0
+    
+    return np.asarray(thick), np.asarray(nvp), np.asarray(nvs), np.asarray(ndensity)
+
 @jitted
 def is_sorted(t):
     """Check if array is sorted."""
