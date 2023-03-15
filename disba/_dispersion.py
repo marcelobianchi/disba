@@ -44,8 +44,7 @@ class PhaseDispersion(BaseDispersion):
             Indicate the type of model layers - flat or spherical
 
         """
-        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
-        self._model_type = model_type
+        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc, model_type)
 
     def __call__(self, t, mode=0, wave="rayleigh"):
         """
@@ -132,8 +131,7 @@ class GroupDispersion(BaseDispersion):
         if not isinstance(dt, float):
             raise TypeError()
 
-        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
-        self._model_type = model_type
+        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc, model_type)
         self._dt = dt
 
     def __call__(self, t, mode=0, wave="rayleigh"):

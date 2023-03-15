@@ -12,34 +12,35 @@ def flatten(thickness, velocity_p, velocity_s, density, wave):
     if wave not in ['love', 'rayleigh']:
         raise Exception("Bad wave {} on flat, valid are 'love' or 'rayleigh'.".format(wave))
     
-    earth = 6371.0
-    dr    = 0.0
+    earth = np.double(6371.0)
+    dr    = np.double(0.0)
     r0    = earth
     
     thick = []
     nvp   = []
     nvs   = []
     ndensity  = []
+    thickness[-1] = np.double(1.0)
     for (i,(d, vp,vs,density)) in enumerate(zip(thickness, velocity_p, velocity_s, density)):
-        dr += d
+        dr += np.double(d)
         r1 = earth - dr
         
         # Thick
-        if r1 < 1E-5: r1 = 1E-5
-        z0 = earth * np.log(earth/r0)
-        z1 = earth * np.log(earth/r1)
+        if r1 < 1: r1 = 1.0
+        z0 = earth * np.log(earth/r0, dtype = np.double)
+        z1 = earth * np.log(earth/r1, dtype = np.double)
         thick.append(z1-z0)
-        tmp = ((earth+earth) / (r0 + r1))
+        tmp = np.double((earth+earth) / (r0 + r1))
         
         # Velocity
-        nvp.append(tmp*vp)
-        nvs.append(tmp*vs)
+        nvp.append(np.double(tmp*vp))
+        nvs.append(np.double(tmp*vs))
         
         # Density
         if wave == 'love':
-            ndensity.append(density * np.power(tmp, -5.0))
+            ndensity.append(density * np.double(np.power(tmp, -5.0)))
         elif wave == 'rayleigh':
-            ndensity.append(density * np.power(tmp, -2.275))
+            ndensity.append(density * np.double(np.power(tmp, -2.275)))
 
         r0 = r1
         

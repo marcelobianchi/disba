@@ -13,7 +13,7 @@ def is_arraylike(arr, size):
 
 
 class Base(ABC):
-    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc):
+    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc, model_type = 'flat'):
         """Base class."""
         mmax = len(thickness)
         if not is_arraylike(thickness, mmax):
@@ -35,6 +35,7 @@ class Base(ABC):
         self._density = np.asarray(density)
         self._algorithm = algorithm
         self._dc = dc
+        self._model_type = model_type
 
     def resample(self, dz):
         """
@@ -89,20 +90,25 @@ class Base(ABC):
         """Return phase velocity increment for root finding."""
         return self._dc
 
+    @property
+    def model_type(self):
+        """Return layer model type (flat or spherical)."""
+        return self._model_type
+
 
 class BaseDispersion(Base):
-    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc):
+    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc, model_type = 'flat'):
         """Base class for dispersion."""
-        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
+        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc, model_type)
 
 
 class BaseSensitivity(Base):
-    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc, dp):
+    def __init__(self, thickness, velocity_p, velocity_s, density, algorithm, dc, dp, model_type = 'flat'):
         """Base class for sensitivity kernel."""
         if not isinstance(dp, float):
             raise TypeError()
 
-        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc)
+        super().__init__(thickness, velocity_p, velocity_s, density, algorithm, dc, model_type)
 
         self._dp = dp
 
