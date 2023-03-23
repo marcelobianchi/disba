@@ -251,13 +251,16 @@ class Model(object):
                 vu = v[-1]-(z[-1]-lu)*((v[-1]-v[-2])/(z[-1]-z[-2]))
         
         # Depth Change
+        ##
+        z = z.copy()
         z -= z.min()
         z /= z.max()
-        
         z *= (lu-ll)
         z += ll
 
         # Vel Change
+        ##
+        v = v.copy()
         if scale_vel:
             v -= v[0]
             v /= v[-1]
@@ -267,35 +270,49 @@ class Model(object):
         return z,v
 
     def mod(self, controls, inplace = False):
-        if self.modified: raise Exception("Cannot modify a modified model")
+        if self.modified:
+            raise Exception("Cannot modify a modified model")
         
         if not inplace:
             _m = Model(self.filename, self.file_format)
-            if self.__has_ocean__: _m.insert_prem_ocean(self.__model__['z'][1])
+            
+            if self.__has_ocean__:
+                _m.insert_prem_ocean(self.__model__['z'][1])
+            
             _m.mod(controls, True)
+            
             return _m
         
         z = np.array([])
         vp = np.array([])
         vs = np.array([])
+
         for l in ['c', 'l', 'u', 'tz', 'lm', 'oc', 'ic']:
-            zl = self.get('z')[self.layer_mask(l)]
-            vpl = self.get('vp')[self.layer_mask(l)]
-            vsl = self.get('vs')[self.layer_mask(l)]
-            if l in controls:
-                # VP
-                zl, vl = Model.T(zl, vpl, *controls[l])
-                # VS
-                zl = self.get('z')[self.layer_mask(l)]
-                zl, vl = Model.T(zl, vsl, *controls[l])
+            zl   = self.get('z')[self.layer_mask(l)]
+            vpl  = self.get('vp')[self.layer_mask(l)]
+            vsl  = self.get('vs')[self.layer_mask(l)]
             
-            z = np.append(z, zl)
+            if l in controls:
+                _, vpl = Model.T(zl, vpl, *controls[l])
+                zl, vsl = Model.T(zl, vsl, *controls[l])
+            
+            z  = np.append(z, zl)
             vp = np.append(vp, vpl)
             vs = np.append(vs, vsl)
-            
-        self.__model__['z'] = z
-        self.__model__['vp'] = vp
-        self.__model__['vs'] = vs
+        
+        # Well, some discontinuities dissapear on rho
+        cur_z = self.get('z')
+        cur_rho = self.get('rho')
+        rho = np.interp(z, cur_z, cur_rho)
+        mask = z != cur_z
+        
+        # Load up
+        self.__model__['z']   = z
+        self.__model__['vp']  = vp
+        self.__model__['vs']  = vs
+        self.__model__['rho'][mask] = rho[mask]
+        self.__model__['qal'] = None
+        self.__model__['qemu'] = None
         
         return None
 
